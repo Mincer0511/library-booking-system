@@ -2,11 +2,14 @@ package com.gxnu.library.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.gxnu.library.entity.SysConfig;
+import com.gxnu.library.exception.BusinessException;
 import com.gxnu.library.mapper.SysConfigMapper;
 import com.gxnu.library.service.ConfigService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -36,5 +39,27 @@ public class ConfigServiceImpl implements ConfigService {
                 return defaultValue;
             }
         });
+    }
+
+    @Override
+    public List<SysConfig> listAll() {
+        return configMapper.selectList(
+                new LambdaQueryWrapper<SysConfig>().orderByAsc(SysConfig::getConfigId));
+    }
+
+    @Override
+    public void updateValue(String configKey, String configValue) {
+        SysConfig config = configMapper.selectOne(
+                new LambdaQueryWrapper<SysConfig>().eq(SysConfig::getConfigKey, configKey));
+        if (config == null) {
+            throw new BusinessException("配置项不存在");
+        }
+        if (!StringUtils.hasText(configValue)) {
+            throw new BusinessException("配置值不能为空");
+        }
+        config.setConfigValue(configValue.trim());
+        configMapper.updateById(config);
+        // 清除缓存，下次读取取新值，规则实时生效
+        cache.remove(configKey);
     }
 }
