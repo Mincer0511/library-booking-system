@@ -83,6 +83,12 @@
             <artifactId>hutool-all</artifactId>
             <version>${hutool.version}</version>
         </dependency>
+        <!-- Apache POI（Hutool Excel 导出依赖） -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.5</version>
+        </dependency>
         <!-- Knife4j 接口文档 -->
         <dependency>
             <groupId>com.github.xiaoymin</groupId>
