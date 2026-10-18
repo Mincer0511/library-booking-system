@@ -9,7 +9,8 @@ spring:
     # createDatabaseIfNotExist=true：首次启动自动建库；建表由下方 sql.init 完成
     url: jdbc:mysql://localhost:3306/library_booking?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     username: root
-    password: root
+    # 密码必须加引号：0 开头的数字会被 YAML 解析为八进制
+    password: "0511"
   sql:
     init:
       mode: always
