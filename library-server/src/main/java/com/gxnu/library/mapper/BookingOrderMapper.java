@@ -55,4 +55,14 @@ public interface BookingOrderMapper extends BaseMapper<BookingOrder> {
      */
     BookingVO selectMyBookingDetail(@Param("orderId") Long orderId,
                                     @Param("userId") Long userId);
+
+    /**
+     * 管理端订单分页（联查用户/座位/自习室/楼层，多条件筛选）
+     */
+    IPage<com.gxnu.library.vo.AdminBookingVO> selectAdminBookingPage(
+            Page<com.gxnu.library.vo.AdminBookingVO> page,
+            @Param("userId") Long userId,
+            @Param("roomId") Long roomId,
+            @Param("bookingDate") LocalDate bookingDate,
+            @Param("status") Integer status);
 }

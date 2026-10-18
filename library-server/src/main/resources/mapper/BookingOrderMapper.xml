@@ -102,5 +102,53 @@
         WHERE o.order_id = #{orderId}
           AND o.user_id = #{userId}
     </select>
+    <!-- 管理端订单分页：多条件组合筛选 -->
+    <select id="selectAdminBookingPage" resultType="com.gxnu.library.vo.AdminBookingVO">
+        SELECT
+            o.order_id       AS orderId,
+            o.user_id        AS userId,
+            u.username       AS username,
+            u.name           AS realName,
+            o.seat_id        AS seatId,
+            s.seat_code      AS seatCode,
+            o.room_id        AS roomId,
+            r.room_name      AS roomName,
+            f.floor_num      AS floorNum,
+            o.booking_date   AS bookingDate,
+            o.start_time     AS startTime,
+            o.end_time       AS endTime,
+            o.status         AS status,
+            CASE o.status
+                WHEN 0 THEN '待签到'
+                WHEN 1 THEN '进行中'
+                WHEN 2 THEN '已完成'
+                WHEN 3 THEN '已取消'
+                WHEN 4 THEN '已爽约'
+            END AS statusText,
+            o.checkin_time   AS checkinTime,
+            o.checkout_time  AS checkoutTime,
+            o.remark         AS remark,
+            o.create_time    AS createTime
+        FROM booking_order o
+        LEFT JOIN study_seat s ON s.seat_id = o.seat_id
+        LEFT JOIN study_room r ON r.room_id = o.room_id
+        LEFT JOIN library_floor f ON f.floor_id = r.floor_id
+        LEFT JOIN sys_user u ON u.user_id = o.user_id
+        <where>
+            <if test="userId != null">
+                AND o.user_id = #{userId}
+            </if>
+            <if test="roomId != null">
+                AND o.room_id = #{roomId}
+            </if>
+            <if test="bookingDate != null">
+                AND o.booking_date = #{bookingDate}
+            </if>
+            <if test="status != null">
+                AND o.status = #{status}
+            </if>
+        </where>
+        ORDER BY o.create_time DESC
+    </select>
 
 </mapper>
