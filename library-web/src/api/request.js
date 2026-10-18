@@ -36,8 +36,13 @@ request.interceptors.response.use(
       return Promise.reject(new Error(res.msg || '未登录'))
     }
     // 其他业务错误：提示后端 msg
-    ElMessage.error(res.msg || '请求失败')
-    return Promise.reject(new Error(res.msg || '请求失败'))
+    // 1001（预约禁用期）不弹 toast，由页面用醒目弹窗处理（F2-10）
+    const err = new Error(res.msg || '请求失败')
+    err.code = res.code
+    if (res.code !== 1001) {
+      ElMessage.error(res.msg || '请求失败')
+    }
+    return Promise.reject(err)
   },
   (error) => {
     // HTTP 层错误：后端返回 401 状态码的情况

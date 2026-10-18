@@ -57,7 +57,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { getSeatMap } from '@/api/room'
 import { createBooking } from '@/api/booking'
 
@@ -113,7 +113,15 @@ async function onSubmit() {
     ElMessage.success('预约成功，请按时签到~')
     router.replace('/my/booking')
   } catch (e) {
-    // 失败提示由响应拦截器统一弹出（后端 msg）
+    // 预约禁用期（code 1001）：醒目弹窗提示，拦截器不弹普通 toast
+    if (e?.code === 1001) {
+      ElMessageBox.alert(
+        `${e.message}。解禁后信用分将恢复至 60 分，届时可正常预约。`,
+        '预约功能禁用中',
+        { confirmButtonText: '我知道了', type: 'warning' }
+      )
+    }
+    // 其余失败提示由响应拦截器统一弹出（后端 msg）
   } finally {
     submitting.value = false
   }

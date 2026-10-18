@@ -1,9 +1,16 @@
 // 格式化工具函数
+import dayjs from 'dayjs'
 
 // 将 "HH:mm:ss" 格式化为 "HH:mm"（为空则原样返回）
 export function formatTime(t) {
   if (!t) return t
   return t.slice(0, 5)
+}
+
+// 日期时间格式化（默认 yyyy-MM-dd HH:mm）
+export function formatDateTime(t, pattern = 'YYYY-MM-DD HH:mm') {
+  if (!t) return ''
+  return dayjs(t).format(pattern)
 }
 
 // 订单状态映射
@@ -32,4 +39,10 @@ export function roomTypeText(type) {
 
 export function roomTypeTag(type) {
   return ROOM_TYPE[type] ? ROOM_TYPE[type].type : 'primary'
+}
+
+// 违规类型标签颜色（爽约/占座/其他）
+export function violationTagType(type) {
+  const map = { 爽约: 'danger', 占座: 'warning' }
+  return map[type] || 'info'
 }

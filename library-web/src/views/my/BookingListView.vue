@@ -13,8 +13,14 @@
         <el-tab-pane label="已爽约" name="4" />
       </el-tabs>
 
-      <!-- 预约表格 -->
-      <el-table :data="list" v-loading="loading" style="width: 100%">
+      <!-- 预约表格（点击行进入详情） -->
+      <el-table
+        :data="list"
+        v-loading="loading"
+        style="width: 100%"
+        class="booking-table"
+        @row-click="goDetail"
+      >
         <el-table-column prop="roomName" label="自习室" min-width="120">
           <template #default="{ row }">
             {{ row.roomName }}
@@ -33,19 +39,15 @@
             <StatusTag :status="row.status" />
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="160" />
-        <el-table-column label="操作" width="110" fixed="right">
+        <el-table-column label="创建时间" width="160">
           <template #default="{ row }">
-            <el-button
-              v-if="row.canCancel"
-              type="danger"
-              size="small"
-              plain
-              round
-              @click="onCancel(row)"
-            >
-              取消预约
-            </el-button>
+            {{ formatDateTime(row.createTime) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="230" fixed="right">
+          <template #default="{ row }">
+            <!-- 按 canXxx 动态显示操作按钮 -->
+            <BookingActions :booking="row" size="small" @refresh="fetchList" />
           </template>
         </el-table-column>
         <template #empty>
@@ -70,11 +72,14 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { getMyBookings, cancelBooking } from '@/api/booking'
-import { formatTime } from '@/utils/format'
+import { useRouter } from 'vue-router'
+import { getMyBookings } from '@/api/booking'
+import { formatTime, formatDateTime } from '@/utils/format'
 import StatusTag from '@/components/StatusTag.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import BookingActions from '@/components/BookingActions.vue'
+
+const router = useRouter()
 
 const list = ref([])
 const total = ref(0)
@@ -103,16 +108,9 @@ function onStatusChange() {
   fetchList()
 }
 
-// 取消预约（二次确认）
-async function onCancel(row) {
-  await ElMessageBox.confirm(
-    `确定取消 ${row.bookingDate} ${formatTime(row.startTime)} 的预约吗？`,
-    '取消预约',
-    { confirmButtonText: '确定取消', cancelButtonText: '再想想', type: 'warning' }
-  )
-  await cancelBooking(row.orderId)
-  ElMessage.success('已取消预约')
-  fetchList()
+// 点击行进入预约详情
+function goDetail(row) {
+  router.push(`/my/booking/${row.orderId}`)
 }
 
 onMounted(fetchList)
@@ -123,6 +121,11 @@ onMounted(fetchList)
   font-size: 20px;
   margin-bottom: 12px;
   color: var(--color-text-primary);
+}
+
+/* 行可点击手势 */
+.booking-table :deep(.el-table__row) {
+  cursor: pointer;
 }
 
 .pagination-wrap {
