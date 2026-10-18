@@ -35,6 +35,15 @@ public interface BookingOrderMapper extends BaseMapper<BookingOrder> {
                               @Param("endTime") LocalTime endTime);
 
     /**
+     * 续时冲突校验：座位时段冲突（排除指定订单本身）
+     */
+    int countSeatConflictExclude(@Param("seatId") Long seatId,
+                                 @Param("bookingDate") LocalDate bookingDate,
+                                 @Param("startTime") LocalTime startTime,
+                                 @Param("endTime") LocalTime endTime,
+                                 @Param("excludeOrderId") Long excludeOrderId);
+
+    /**
      * 我的预约分页（联查座位/自习室/楼层）
      */
     IPage<BookingVO> selectMyBookingPage(Page<BookingVO> page,

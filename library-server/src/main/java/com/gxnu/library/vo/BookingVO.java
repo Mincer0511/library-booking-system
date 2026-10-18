@@ -30,4 +30,10 @@ public class BookingVO {
     private LocalDateTime createTime;
     /** 是否可取消（待签到且未开始），服务端计算 */
     private Boolean canCancel;
+    /** 是否可签到（待签到且在签到窗口内），服务端计算 */
+    private Boolean canCheckin;
+    /** 是否可签退（进行中），服务端计算 */
+    private Boolean canCheckout;
+    /** 是否可续时（进行中且未过结束时间），服务端计算 */
+    private Boolean canExtend;
 }

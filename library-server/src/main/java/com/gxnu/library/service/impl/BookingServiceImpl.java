@@ -7,6 +7,7 @@ import com.gxnu.library.common.constant.OrderStatus;
 import com.gxnu.library.common.page.PageResult;
 import com.gxnu.library.common.result.ResultCode;
 import com.gxnu.library.dto.BookingCreateDTO;
+import com.gxnu.library.dto.BookingExtendDTO;
 import com.gxnu.library.entity.BookingOrder;
 import com.gxnu.library.entity.StudyRoom;
 import com.gxnu.library.entity.StudySeat;
@@ -18,6 +19,7 @@ import com.gxnu.library.mapper.StudySeatMapper;
 import com.gxnu.library.mapper.SysUserMapper;
 import com.gxnu.library.service.BookingService;
 import com.gxnu.library.service.ConfigService;
+import com.gxnu.library.service.CreditService;
 import com.gxnu.library.utils.UserContext;
 import com.gxnu.library.vo.BookingVO;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +47,7 @@ public class BookingServiceImpl implements BookingService {
     private final StudyRoomMapper roomMapper;
     private final SysUserMapper userMapper;
     private final ConfigService configService;
+    private final CreditService creditService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -160,11 +163,96 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void checkin(Long orderId) {
+        BookingOrder order = getOwnOrder(orderId);
+        if (order.getStatus() != OrderStatus.WAIT_CHECKIN) {
+            throw new BusinessException(ResultCode.BOOKING_STATE_ERROR, "当前状态不可签到");
+        }
+        int lateMinutes = configService.getInt(ConfigKey.CHECKIN_LATE_MINUTES, 30);
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startDateTime = LocalDateTime.of(order.getBookingDate(), order.getStartTime());
+        if (now.isBefore(startDateTime)) {
+            throw new BusinessException("未到签到时间，可于 " + order.getStartTime().format(TIME_FMT) + " 起签到");
+        }
+        if (now.isAfter(startDateTime.plusMinutes(lateMinutes))) {
+            throw new BusinessException(ResultCode.BOOKING_STATE_ERROR, "已超过签到时限，订单将被判定为爽约");
+        }
+        order.setStatus(OrderStatus.IN_USE);
+        order.setCheckinTime(now);
+        bookingMapper.updateById(order);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void checkout(Long orderId) {
+        BookingOrder order = getOwnOrder(orderId);
+        if (order.getStatus() != OrderStatus.IN_USE) {
+            throw new BusinessException(ResultCode.BOOKING_STATE_ERROR, "当前状态不可签退");
+        }
+        order.setStatus(OrderStatus.FINISHED);
+        order.setCheckoutTime(LocalDateTime.now());
+        bookingMapper.updateById(order);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void extend(Long orderId, BookingExtendDTO dto) {
+        BookingOrder order = getOwnOrder(orderId);
+        if (order.getStatus() != OrderStatus.IN_USE) {
+            throw new BusinessException(ResultCode.BOOKING_STATE_ERROR, "当前状态不可续时");
+        }
+        LocalTime newEnd = LocalTime.parse(dto.getNewEndTime(), TIME_FMT);
+        if (!newEnd.isAfter(order.getEndTime())) {
+            throw new BusinessException("续时后的结束时间须晚于当前结束时间");
+        }
+        // 续时后结束时间不得晚于当前时刻（防止穿越），也不得超过自习室关闭时间
+        if (LocalDateTime.of(order.getBookingDate(), newEnd).isBefore(LocalDateTime.now())) {
+            throw new BusinessException("新的结束时间已过，请重新选择");
+        }
+        StudyRoom room = roomMapper.selectById(order.getRoomId());
+        if (room != null && newEnd.isAfter(room.getCloseTime())) {
+            throw new BusinessException("续时后结束时间超出自习室关闭时间 " + room.getCloseTime());
+        }
+        // 总时长（开始时间 ~ 新结束时间）不得超单次上限
+        int maxHours = configService.getInt(ConfigKey.BOOKING_MAX_HOURS, 4);
+        long totalMinutes = Duration.between(order.getStartTime(), newEnd).toMinutes();
+        if (totalMinutes > maxHours * 60L) {
+            throw new BusinessException("单次使用总时长最长" + maxHours + "小时，无法继续续时");
+        }
+        // 延长时段 [原end, 新end) 座位须空闲（排除本订单）
+        int conflict = bookingMapper.countSeatConflictExclude(
+                order.getSeatId(), order.getBookingDate(), order.getEndTime(), newEnd, orderId);
+        if (conflict > 0) {
+            throw new BusinessException(ResultCode.BOOKING_CONFLICT, "续时时段该座位已被他人预约");
+        }
+        order.setEndTime(newEnd);
+        bookingMapper.updateById(order);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void markNoShow(Long orderId) {
+        BookingOrder order = bookingMapper.selectById(orderId);
+        if (order == null || order.getStatus() != OrderStatus.WAIT_CHECKIN) {
+            return;
+        }
+        order.setStatus(OrderStatus.NO_SHOW);
+        bookingMapper.updateById(order);
+
+        int deductScore = configService.getInt(ConfigKey.CREDIT_VIOLATION_DEDUCT, 10);
+        String desc = "预约 " + order.getBookingDate() + " "
+                + order.getStartTime().format(TIME_FMT) + "-" + order.getEndTime().format(TIME_FMT)
+                + " 未按时签到，系统判定爽约";
+        creditService.deduct(order.getUserId(), orderId, "爽约", desc, deductScore, null);
+    }
+
+    @Override
     public PageResult<BookingVO> myPage(Integer status, long pageNum, long pageSize) {
         Long userId = UserContext.currentUserId();
         Page<BookingVO> page = new Page<>(pageNum, pageSize);
         Page<BookingVO> result = (Page<BookingVO>) bookingMapper.selectMyBookingPage(page, userId, status);
-        result.getRecords().forEach(this::fillCanCancel);
+        result.getRecords().forEach(this::fillActions);
         return PageResult.of(result);
     }
 
@@ -175,14 +263,32 @@ public class BookingServiceImpl implements BookingService {
         if (vo == null) {
             throw new BusinessException(ResultCode.DATA_NOT_FOUND, "预约记录不存在");
         }
-        fillCanCancel(vo);
+        fillActions(vo);
         return vo;
     }
 
-    /** 计算是否可取消：待签到且未到开始时间 */
-    private void fillCanCancel(BookingVO vo) {
-        boolean canCancel = vo.getStatus() == OrderStatus.WAIT_CHECKIN
-                && LocalDateTime.now().isBefore(LocalDateTime.of(vo.getBookingDate(), vo.getStartTime()));
-        vo.setCanCancel(canCancel);
+    /** 查询本人订单，不存在或非本人抛异常 */
+    private BookingOrder getOwnOrder(Long orderId) {
+        Long userId = UserContext.currentUserId();
+        BookingOrder order = bookingMapper.selectById(orderId);
+        if (order == null || !order.getUserId().equals(userId)) {
+            throw new BusinessException(ResultCode.DATA_NOT_FOUND, "预约记录不存在");
+        }
+        return order;
+    }
+
+    /** 计算各操作按钮可用性：取消 / 签到 / 签退 / 续时 */
+    private void fillActions(BookingVO vo) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startDateTime = LocalDateTime.of(vo.getBookingDate(), vo.getStartTime());
+        int lateMinutes = configService.getInt(ConfigKey.CHECKIN_LATE_MINUTES, 30);
+
+        vo.setCanCancel(vo.getStatus() == OrderStatus.WAIT_CHECKIN && now.isBefore(startDateTime));
+        vo.setCanCheckin(vo.getStatus() == OrderStatus.WAIT_CHECKIN
+                && !now.isBefore(startDateTime)
+                && !now.isAfter(startDateTime.plusMinutes(lateMinutes)));
+        vo.setCanCheckout(vo.getStatus() == OrderStatus.IN_USE);
+        vo.setCanExtend(vo.getStatus() == OrderStatus.IN_USE
+                && now.isBefore(LocalDateTime.of(vo.getBookingDate(), vo.getEndTime())));
     }
 }
