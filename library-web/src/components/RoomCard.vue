@@ -1,5 +1,18 @@
 <template>
   <div class="room-card" @click="goDetail">
+    <!-- 收藏按钮：未收藏灰色描边星，已收藏橙黄填充星 -->
+    <button
+      class="fav-btn"
+      :class="{ favored }"
+      :title="favored ? '取消收藏' : '收藏自习室'"
+      @click.stop="$emit('toggle-favorite', room)"
+    >
+      <el-icon :size="18">
+        <StarFilled v-if="favored" />
+        <Star v-else />
+      </el-icon>
+    </button>
+
     <!-- 标题行：名称 + 类型标签 -->
     <div class="card-header">
       <span class="room-name">{{ room.roomName }}</span>
@@ -34,14 +47,23 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { Star, StarFilled } from '@element-plus/icons-vue'
 import { formatTime, roomTypeText } from '@/utils/format'
 
 const props = defineProps({
   room: {
     type: Object,
     required: true
+  },
+  // 是否已收藏（控制星标填充）
+  favored: {
+    type: Boolean,
+    default: false
   }
 })
+
+// 点击收藏按钮时通知父组件切换收藏状态
+defineEmits(['toggle-favorite'])
 
 const router = useRouter()
 
@@ -75,6 +97,36 @@ function goDetail() {
   gap: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
+  position: relative;
+}
+
+/* 收藏星标按钮：右上角悬浮 */
+.fav-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-primary-light);
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 2;
+}
+
+.fav-btn:hover {
+  transform: scale(1.12);
+}
+
+/* 已收藏：橙黄填充 */
+.fav-btn.favored {
+  color: #faad14;
+  background: #fff7e6;
 }
 
 /* hover 上浮效果 */

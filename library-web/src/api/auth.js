@@ -16,3 +16,13 @@ export function login(data) {
 export function getUserInfoApi() {
   return request.get('/auth/info')
 }
+
+// 忘记密码：发送模拟验证码 {username, phone} → {code, expireMinutes, tip}
+export function sendForgetCode(data) {
+  return request.post('/auth/forget/send-code', data)
+}
+
+// 忘记密码：验证码重置密码 {username, code, newPassword}
+export function resetForgetPassword(data) {
+  return request.post('/auth/forget/reset', data)
+}

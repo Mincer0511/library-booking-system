@@ -13,21 +13,48 @@
         <nav class="nav-menu">
           <router-link to="/home" class="nav-item" active-class="active">首页</router-link>
           <router-link to="/my/booking" class="nav-item" active-class="active">我的预约</router-link>
+          <router-link to="/notice" class="nav-item" active-class="active">公告</router-link>
+          <router-link to="/help" class="nav-item" active-class="active">帮助中心</router-link>
         </nav>
 
         <!-- 右侧用户区 -->
         <div class="user-area">
-          <el-dropdown @command="handleCommand">
-            <span class="user-name">
-              {{ userStore.userInfo?.name || userStore.userInfo?.username || '同学' }}
-              <el-icon><ArrowDown /></el-icon>
-            </span>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="logout">退出登录</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
+          <template v-if="userStore.isLogin">
+            <!-- 消息入口（学生角色显示，带未读角标） -->
+            <el-badge
+              v-if="isStudent"
+              :value="unreadCount"
+              :hidden="!unreadCount"
+              :max="99"
+              class="msg-badge"
+            >
+              <el-icon class="msg-bell" :size="20" @click="$router.push('/my/message')">
+                <Bell />
+              </el-icon>
+            </el-badge>
+
+            <el-dropdown @command="handleCommand">
+              <span class="user-name">
+                {{ userStore.userInfo?.name || userStore.userInfo?.nickname || userStore.userInfo?.username || '同学' }}
+                <el-icon><ArrowDown /></el-icon>
+              </span>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="profile">👤 个人中心</el-dropdown-item>
+                  <el-dropdown-item command="booking">📅 我的预约</el-dropdown-item>
+                  <el-dropdown-item command="credit">💯 我的信用</el-dropdown-item>
+                  <el-dropdown-item command="violation">📋 违规记录</el-dropdown-item>
+                  <el-dropdown-item command="favorite">⭐ 我的收藏</el-dropdown-item>
+                  <el-dropdown-item command="message">🔔 消息中心</el-dropdown-item>
+                  <el-dropdown-item command="help">🎡 帮助中心</el-dropdown-item>
+                  <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </template>
+
+          <!-- 未登录：显示登录入口（公告 / 帮助页可免登录访问） -->
+          <router-link v-else to="/login" class="nav-item">登录 / 注册</router-link>
         </div>
       </div>
     </header>
@@ -45,16 +72,47 @@
 </template>
 
 <script setup>
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { ArrowDown } from '@element-plus/icons-vue'
+import { ArrowDown, Bell } from '@element-plus/icons-vue'
+import { getUnreadCount } from '@/api/message'
 
+const route = useRoute()
+const router = useRouter()
 const userStore = useUserStore()
+
+// 未读消息数
+const unreadCount = ref(0)
+
+// 学生角色才显示消息入口（管理员不展示；role 缺省按学生处理）
+const isStudent = computed(
+  () => String(userStore.userInfo?.role || 'STUDENT').toUpperCase() === 'STUDENT'
+)
+
+// 拉取未读数
+async function fetchUnread() {
+  if (!userStore.isLogin || !isStudent.value) return
+  try {
+    unreadCount.value = (await getUnreadCount()) || 0
+  } catch (e) {
+    // 未读数加载失败不阻塞页面
+  }
+}
+
+onMounted(fetchUnread)
+
+// 路由切换后刷新未读数（如读完消息返回其他页面）
+watch(() => route.path, fetchUnread)
 
 // 下拉菜单指令处理
 function handleCommand(cmd) {
   if (cmd === 'logout') {
     userStore.logout()
+    return
   }
+  // 帮助中心为公共页面，其余在 /my 下
+  router.push(cmd === 'help' ? '/help' : `/my/${cmd}`)
 }
 </script>
 
@@ -123,6 +181,27 @@ function handleCommand(cmd) {
 .nav-item.active {
   color: #fff;
   background: var(--color-primary);
+}
+
+.user-area {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.msg-badge {
+  display: flex;
+  align-items: center;
+}
+
+.msg-bell {
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: color 0.2s ease;
+}
+
+.msg-bell:hover {
+  color: var(--color-primary);
 }
 
 .user-name {
