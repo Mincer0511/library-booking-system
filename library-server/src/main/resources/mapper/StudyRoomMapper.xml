@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gxnu.library.mapper.StudyRoomMapper">
+
+    <!-- 自习室列表（含实时空余座位数：当前时刻无有效预约的可用座位） -->
+    <select id="selectRoomList" resultType="com.gxnu.library.vo.RoomListVO">
+        SELECT
+            r.room_id     AS roomId,
+            r.floor_id    AS floorId,
+            f.floor_num   AS floorNum,
+            r.room_name   AS roomName,
+            r.seat_count  AS seatCount,
+            r.open_time   AS openTime,
+            r.close_time  AS closeTime,
+            r.room_type   AS roomType,
+            r.description AS description,
+            r.status      AS status,
+            (SELECT COUNT(*) FROM study_seat s
+              WHERE s.room_id = r.room_id AND s.status = 1) AS usableSeats,
+            (SELECT COUNT(*) FROM study_seat s
+              WHERE s.room_id = r.room_id AND s.status = 1
+                AND s.seat_id NOT IN (
+                    SELECT o.seat_id FROM booking_order o
+                    WHERE o.booking_date = CURDATE()
+                      AND o.status IN (0, 1)
+                      AND o.start_time &lt;= CURTIME()
+                      AND o.end_time &gt; CURTIME()
+                )) AS freeNow
+        FROM study_room r
+        LEFT JOIN library_floor f ON f.floor_id = r.floor_id
+        WHERE r.status = 1
+        <if test="floorId != null">
+            AND r.floor_id = #{floorId}
+        </if>
+        <if test="roomType != null and roomType != ''">
+            AND r.room_type = #{roomType}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND r.room_name LIKE CONCAT('%', #{keyword}, '%')
+        </if>
+        ORDER BY f.floor_num, r.room_id
+    </select>
+
+</mapper>

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gxnu.library.mapper.BookingOrderMapper">
+
+    <!-- 座位时段冲突校验（行锁防并发）：区间相交即冲突 -->
+    <select id="countSeatConflictForUpdate" resultType="int">
+        SELECT COUNT(*) FROM booking_order
+        WHERE seat_id = #{seatId}
+          AND booking_date = #{bookingDate}
+          AND status IN (0, 1)
+          AND start_time &lt; #{endTime}
+          AND end_time &gt; #{startTime}
+        FOR UPDATE
+    </select>
+
+    <!-- 同一用户同时段冲突校验 -->
+    <select id="countUserTimeConflict" resultType="int">
+        SELECT COUNT(*) FROM booking_order
+        WHERE user_id = #{userId}
+          AND booking_date = #{bookingDate}
+          AND status IN (0, 1)
+          AND start_time &lt; #{endTime}
+          AND end_time &gt; #{startTime}
+    </select>
+
+    <!-- 我的预约分页 -->
+    <select id="selectMyBookingPage" resultType="com.gxnu.library.vo.BookingVO">
+        SELECT
+            o.order_id       AS orderId,
+            o.user_id        AS userId,
+            o.seat_id        AS seatId,
+            s.seat_code      AS seatCode,
+            o.room_id        AS roomId,
+            r.room_name      AS roomName,
+            f.floor_num      AS floorNum,
+            o.booking_date   AS bookingDate,
+            o.start_time     AS startTime,
+            o.end_time       AS endTime,
+            o.status         AS status,
+            CASE o.status
+                WHEN 0 THEN '待签到'
+                WHEN 1 THEN '进行中'
+                WHEN 2 THEN '已完成'
+                WHEN 3 THEN '已取消'
+                WHEN 4 THEN '已爽约'
+            END AS statusText,
+            o.checkin_time   AS checkinTime,
+            o.checkout_time  AS checkoutTime,
+            o.remark         AS remark,
+            o.create_time    AS createTime
+        FROM booking_order o
+        LEFT JOIN study_seat s ON s.seat_id = o.seat_id
+        LEFT JOIN study_room r ON r.room_id = o.room_id
+        LEFT JOIN library_floor f ON f.floor_id = r.floor_id
+        WHERE o.user_id = #{userId}
+        <if test="status != null">
+            AND o.status = #{status}
+        </if>
+        ORDER BY o.create_time DESC
+    </select>
+
+    <!-- 我的预约详情 -->
+    <select id="selectMyBookingDetail" resultType="com.gxnu.library.vo.BookingVO">
+        SELECT
+            o.order_id       AS orderId,
+            o.user_id        AS userId,
+            o.seat_id        AS seatId,
+            s.seat_code      AS seatCode,
+            o.room_id        AS roomId,
+            r.room_name      AS roomName,
+            f.floor_num      AS floorNum,
+            o.booking_date   AS bookingDate,
+            o.start_time     AS startTime,
+            o.end_time       AS endTime,
+            o.status         AS status,
+            CASE o.status
+                WHEN 0 THEN '待签到'
+                WHEN 1 THEN '进行中'
+                WHEN 2 THEN '已完成'
+                WHEN 3 THEN '已取消'
+                WHEN 4 THEN '已爽约'
+            END AS statusText,
+            o.checkin_time   AS checkinTime,
+            o.checkout_time  AS checkoutTime,
+            o.remark         AS remark,
+            o.create_time    AS createTime
+        FROM booking_order o
+        LEFT JOIN study_seat s ON s.seat_id = o.seat_id
+        LEFT JOIN study_room r ON r.room_id = o.room_id
+        LEFT JOIN library_floor f ON f.floor_id = r.floor_id
+        WHERE o.order_id = #{orderId}
+          AND o.user_id = #{userId}
+    </select>
+
+</mapper>

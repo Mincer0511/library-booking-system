@@ -1,0 +1,46 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: library-server
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # createDatabaseIfNotExist=true：首次启动自动建库；建表由下方 sql.init 完成
+    url: jdbc:mysql://localhost:3306/library_booking?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:sql/schema.sql
+      continue-on-error: true
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.gxnu.library.entity
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    banner: false
+    db-config:
+      id-type: auto
+
+# JWT 配置
+jwt:
+  secret: gxnu-library-booking-jwt-secret-2026-springboot3
+  # 有效期 12 小时（毫秒）
+  expire: 43200000
+
+logging:
+  level:
+    com.gxnu.library: info
+
+# Knife4j 接口文档：http://localhost:8080/doc.html
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
