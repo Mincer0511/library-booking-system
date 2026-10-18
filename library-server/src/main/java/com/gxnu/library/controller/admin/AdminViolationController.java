@@ -1,6 +1,7 @@
 package com.gxnu.library.controller.admin;
 
 import com.gxnu.library.annotation.OperationLog;
+import com.gxnu.library.annotation.RepeatSubmit;
 import com.gxnu.library.annotation.RequireRole;
 import com.gxnu.library.common.constant.RoleKey;
 import com.gxnu.library.common.page.PageResult;
@@ -41,6 +42,7 @@ public class AdminViolationController {
     }
 
     @OperationLog(module = "违规管理", content = "手动添加违规")
+    @RepeatSubmit
     @PostMapping
     public Result<Void> add(@Valid @RequestBody ViolationAddDTO dto) {
         adminViolationService.add(dto, UserContext.currentUserId());

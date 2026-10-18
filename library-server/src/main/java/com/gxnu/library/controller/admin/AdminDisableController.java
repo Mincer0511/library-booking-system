@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.gxnu.library.annotation.OperationLog;
+import com.gxnu.library.annotation.RepeatSubmit;
 import com.gxnu.library.annotation.RequireRole;
 import com.gxnu.library.common.constant.RoleKey;
 import com.gxnu.library.common.page.PageResult;
@@ -112,6 +113,7 @@ public class AdminDisableController {
 
     /** 信用分调整（留痕 + 站内通知） */
     @OperationLog(module = "信用分管理", content = "调整用户信用分")
+    @RepeatSubmit
     @PutMapping("/credit/{userId}")
     public Result<Void> adjustCredit(@PathVariable Long userId, @Valid @RequestBody CreditAdjustDTO dto) {
         SysUser user = userMapper.selectById(userId);

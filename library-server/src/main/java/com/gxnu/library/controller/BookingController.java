@@ -1,5 +1,6 @@
 package com.gxnu.library.controller;
 
+import com.gxnu.library.annotation.RepeatSubmit;
 import com.gxnu.library.common.page.PageResult;
 import com.gxnu.library.common.result.Result;
 import com.gxnu.library.dto.BookingCreateDTO;
@@ -28,8 +29,9 @@ public class BookingController {
     private final BookingService bookingService;
 
     /**
-     * 提交预约
+     * 提交预约（3秒内重复提交相同参数将被拦截）
      */
+    @RepeatSubmit
     @PostMapping
     public Result<Long> create(@Valid @RequestBody BookingCreateDTO dto) {
         return Result.success(bookingService.create(dto));
