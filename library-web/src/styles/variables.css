@@ -1,0 +1,19 @@
+/* 全局设计变量：蓝白卡通校园风 */
+:root {
+  /* 主色与辅助色 */
+  --color-primary: #4A90E2;
+  --color-primary-light: #E8F3FF;
+  --color-success: #52C41A;
+  --color-warning: #FAAD14;
+  --color-danger: #FF4D4F;
+
+  /* 页面背景与文字 */
+  --color-bg-page: #F0F7FF;
+  --color-text-primary: #1F2937;
+  --color-text-secondary: #6B7280;
+
+  /* 边框 / 圆角 / 阴影 */
+  --color-border: #D6E4FF;
+  --radius-base: 12px;
+  --shadow-card: 0 4px 16px rgba(74, 144, 226, 0.12);
+}

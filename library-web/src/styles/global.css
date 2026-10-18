@@ -1,0 +1,62 @@
+/* 全局样式：蓝白卡通校园风基调 + Element Plus 变量覆盖 */
+:root {
+  /* 覆盖 Element Plus 主色与圆角 */
+  --el-color-primary: #4A90E2;
+  --el-border-radius-base: 12px;
+  --el-color-primary-light-3: #7dabea;
+  --el-color-primary-light-5: #a5c6f1;
+  --el-color-primary-light-7: #cedff8;
+  --el-color-primary-light-8: #e1ecfb;
+  --el-color-primary-light-9: #f4f9fe;
+  --el-color-primary-dark-2: #3b73b5;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+  background-color: var(--color-bg-page);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 通用卡片容器：白底 + 圆角 + 淡蓝阴影 */
+.card-container {
+  background: #fff;
+  border-radius: var(--radius-base);
+  box-shadow: var(--shadow-card);
+  padding: 20px;
+}
+
+/* 按钮 hover 轻微上浮动效 */
+.el-button {
+  transition: all 0.2s ease;
+}
+
+.el-button:hover {
+  transform: translateY(-2px);
+}
+
+/* 页面通用容器宽度 */
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* 二级文字 */
+.text-secondary {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
