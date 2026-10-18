@@ -1,6 +1,7 @@
 package com.gxnu.library.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -21,7 +22,7 @@ public class UserUpdateDTO {
     @Pattern(regexp = "^1\\d{10}$", message = "手机号格式不正确")
     private String phone;
 
-    @NotBlank(message = "角色不能为空")
+    @NotNull(message = "角色不能为空")
     private Long roleId;
 
     /** 账号状态：0禁用 1正常 */
