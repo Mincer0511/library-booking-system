@@ -48,6 +48,9 @@ public class BookingOrder {
     /** 签退时间 */
     private LocalDateTime checkoutTime;
 
+    /** 是否已发送临期提醒：0否 1是（CR-001） */
+    private Integer expireNotified;
+
     /** 备注 */
     private String remark;
 

@@ -88,6 +88,7 @@ CREATE TABLE IF NOT EXISTS booking_order (
   status        TINYINT NOT NULL DEFAULT 0 COMMENT '状态：0待签到 1进行中 2已完成 3已取消 4已爽约',
   checkin_time  DATETIME DEFAULT NULL COMMENT '签到时间',
   checkout_time DATETIME DEFAULT NULL COMMENT '签退时间',
+  expire_notified TINYINT NOT NULL DEFAULT 0 COMMENT '是否已发送临期提醒：0否 1是（CR-001）',
   remark        VARCHAR(255) DEFAULT NULL COMMENT '备注',
   create_time   DATETIME NOT NULL COMMENT '创建时间',
   update_time   DATETIME NOT NULL COMMENT '更新时间',

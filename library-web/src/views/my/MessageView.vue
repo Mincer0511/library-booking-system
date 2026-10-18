@@ -32,7 +32,7 @@
             :class="{ unread: msg.isRead === 0 }"
             @click="onMsgClick(msg)"
           >
-            <!-- 类型图标：预约📅蓝 / 违规⚠红 / 系统📢灰 -->
+            <!-- 类型图标：预约📅蓝 / 违规⚠红 / 系统📢灰 / 提醒⏰橙 -->
             <div class="msg-icon" :class="typeClass(msg.type)">{{ typeIcon(msg.type) }}</div>
             <div class="msg-body">
               <div class="msg-head">
@@ -106,17 +106,17 @@ function onFilterChange() {
 
 // 类型图标与样式映射
 function typeIcon(type) {
-  const map = { 预约: '📅', 违规: '⚠️', 系统: '📢' }
+  const map = { 预约: '📅', 违规: '⚠️', 系统: '📢', 提醒: '⏰' }
   return map[type] || '📢'
 }
 
 function typeClass(type) {
-  const map = { 预约: 'blue', 违规: 'red', 系统: 'gray' }
+  const map = { 预约: 'blue', 违规: 'red', 系统: 'gray', 提醒: 'orange' }
   return map[type] || 'gray'
 }
 
 function typeTag(type) {
-  const map = { 预约: 'primary', 违规: 'danger', 系统: 'info' }
+  const map = { 预约: 'primary', 违规: 'danger', 系统: 'info', 提醒: 'warning' }
   return map[type] || 'info'
 }
 
@@ -201,6 +201,10 @@ onMounted(fetchList)
 
 .msg-icon.gray {
   background: #f3f4f6;
+}
+
+.msg-icon.orange {
+  background: #fdf6ec;
 }
 
 .msg-body {
