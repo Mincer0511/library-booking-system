@@ -150,5 +150,55 @@
         </where>
         ORDER BY o.create_time DESC
     </select>
+    <!-- 每日订单数 -->
+    <select id="statDailyCount" resultType="com.gxnu.library.vo.DailyCountVO">
+        SELECT o.booking_date AS date, COUNT(*) AS count
+        FROM booking_order o
+        WHERE o.booking_date BETWEEN #{startDate} AND #{endDate}
+        GROUP BY o.booking_date
+        ORDER BY o.booking_date
+    </select>
+
+    <!-- 热门开始时段（按小时聚合，仅统计进行中/已完成/已爽约的有效预约） -->
+    <select id="statHotHours" resultType="com.gxnu.library.vo.HotHourVO">
+        SELECT HOUR(o.start_time) AS hour, COUNT(*) AS count
+        FROM booking_order o
+        WHERE o.booking_date BETWEEN #{startDate} AND #{endDate}
+          AND o.status IN (1, 2, 4)
+        GROUP BY HOUR(o.start_time)
+        ORDER BY hour
+    </select>
+
+    <!-- 自习室利用率：预约时长 / (座位数 × 开放时长) -->
+    <select id="statRoomUtilization" resultType="com.gxnu.library.vo.RoomUtilizationVO">
+        SELECT
+            o.booking_date AS date,
+            o.room_id      AS roomId,
+            r.room_name    AS roomName,
+            f.floor_num    AS floorNum,
+            r.seat_count   AS totalSeats,
+            SUM(TIMESTAMPDIFF(MINUTE,
+                CONCAT(o.booking_date, ' ', o.start_time),
+                CONCAT(o.booking_date, ' ', o.end_time))) AS bookedMinutes,
+            ROUND(SUM(TIMESTAMPDIFF(MINUTE,
+                CONCAT(o.booking_date, ' ', o.start_time),
+                CONCAT(o.booking_date, ' ', o.end_time))) * 100.0
+                / (r.seat_count * TIMESTAMPDIFF(MINUTE,
+                    CONCAT(o.booking_date, ' ', r.open_time),
+                    CONCAT(o.booking_date, ' ', r.close_time))), 1) AS utilization
+        FROM booking_order o
+        JOIN study_room r ON r.room_id = o.room_id
+        JOIN library_floor f ON f.floor_id = r.floor_id
+        WHERE o.booking_date BETWEEN #{startDate} AND #{endDate}
+          AND o.status IN (0, 1, 2, 4)
+        <if test="floorId != null">
+            AND r.floor_id = #{floorId}
+        </if>
+        <if test="roomId != null">
+            AND o.room_id = #{roomId}
+        </if>
+        GROUP BY o.booking_date, o.room_id, r.room_name, f.floor_num, r.seat_count, r.open_time, r.close_time
+        ORDER BY o.booking_date DESC, utilization DESC
+    </select>
 
 </mapper>

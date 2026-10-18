@@ -10,6 +10,7 @@ import org.apache.ibatis.annotations.Param;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 /**
  * 预约订单 Mapper
@@ -65,4 +66,25 @@ public interface BookingOrderMapper extends BaseMapper<BookingOrder> {
             @Param("roomId") Long roomId,
             @Param("bookingDate") LocalDate bookingDate,
             @Param("status") Integer status);
+
+    /**
+     * 日期范围内每日订单数
+     */
+    List<com.gxnu.library.vo.DailyCountVO> statDailyCount(@Param("startDate") LocalDate startDate,
+                                                          @Param("endDate") LocalDate endDate);
+
+    /**
+     * 日期范围内热门开始时段（按小时聚合，仅统计有效预约）
+     */
+    List<com.gxnu.library.vo.HotHourVO> statHotHours(@Param("startDate") LocalDate startDate,
+                                                     @Param("endDate") LocalDate endDate);
+
+    /**
+     * 自习室利用率：预约时长 / (座位数 × 开放时长)，排除已取消订单
+     */
+    List<com.gxnu.library.vo.RoomUtilizationVO> statRoomUtilization(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("floorId") Long floorId,
+            @Param("roomId") Long roomId);
 }
