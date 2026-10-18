@@ -142,6 +142,9 @@ public class AdminBookingServiceImpl implements AdminBookingService {
     }
 
     private LocalDate parseDate(String date) {
+        if (!StringUtils.hasText(date)) {
+            return null;
+        }
         try {
             return LocalDate.parse(date, DATE_FMT);
         } catch (DateTimeParseException e) {
